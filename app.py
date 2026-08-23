@@ -105,8 +105,14 @@ def get_refined_3_genres(row):
 # =============================================================================================================================
 @st.cache_data
 def load_katalog_data():
+    import glob
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    path_tmdb = os.path.join(base_dir, 'dataset', 'TMDb1902–2026', 'top_rated_movies.csv')
+    # Deteksi nama folder TMDb secara dinamis (hindari hardcode karakter en-dash)
+    tmdb_candidates = glob.glob(os.path.join(base_dir, 'dataset', 'TMDb*'))
+    if not tmdb_candidates:
+        return None, None
+    tmdb_dir = tmdb_candidates[0]
+    path_tmdb = os.path.join(tmdb_dir, 'top_rated_movies.csv')
     path_ml = os.path.join(base_dir, 'dataset', 'ml-latest-small', 'movies.csv')
     
     if os.path.exists(path_tmdb) and os.path.exists(path_ml):
@@ -155,7 +161,9 @@ def load_katalog_data():
 @st.cache_data
 def load_svd_scores():
     try:
-        df_svd = pd.read_csv('pengetahuan_svd.csv')
+        _base = os.path.dirname(os.path.abspath(__file__))
+        _path = os.path.join(_base, 'pengetahuan_svd.csv')
+        df_svd = pd.read_csv(_path)
         df_svd.columns = df_svd.columns.str.strip()
         df_svd['clean_title'] = df_svd['title'].apply(clean_title_academic)
         return df_svd.set_index('clean_title')['prediksi_rating'].to_dict()
@@ -216,29 +224,35 @@ if df_katalog_global is not None:
     st.header(" Cell 7: Trending Movies Catalog (Konten Terpopuler Global 2024-2026)")
     st.markdown("Daftar film *trending* terkini yang disaring dinamis dari database berdasarkan filter era rilis kontemporer:")
     
+    import glob as _glob
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    path_tmdb_raw = os.path.join(base_dir, 'dataset', 'TMDb1902–2026', 'top_rated_movies.csv')
-    df_raw = pd.read_csv(path_tmdb_raw)
-    df_filtered_trending = df_raw[df_raw['release_date'].astype(str).str.contains('2024|2025|2026', na=False)].head(20).copy()
-    
-    trending_display_list = []
-    for idx, row in df_filtered_trending.iterrows():
-        try:
-            tahun_val = pd.to_datetime(row['release_date']).year
-        except:
-            tahun_val = 2024
-            
-        genre_3_format = get_refined_3_genres(row)
-        trending_display_list.append({
-            "No": len(trending_display_list) + 1,
-            "Judul Film": row['title'],
-            "Tahun": int(tahun_val),
-            "Genre": genre_3_format,
-            "Rating": round(row['vote_average'], 4)
-        })
+    tmdb_candidates = _glob.glob(os.path.join(base_dir, 'dataset', 'TMDb*'))
+    path_tmdb_raw = os.path.join(tmdb_candidates[0], 'top_rated_movies.csv') if tmdb_candidates else None
+    if path_tmdb_raw is None or not os.path.exists(path_tmdb_raw):
+        st.warning("⚠️ Dataset TMDb tidak ditemukan.")
+    else:
+        df_raw = pd.read_csv(path_tmdb_raw)
+        df_filtered_trending = df_raw[df_raw['release_date'].astype(str).str.contains('2024|2025|2026', na=False)].head(20).copy()
         
-    st.table(pd.DataFrame(trending_display_list).set_index('No'))
+        trending_display_list = []
+        for idx, row in df_filtered_trending.iterrows():
+            try:
+                tahun_val = pd.to_datetime(row['release_date']).year
+            except:
+                tahun_val = 2024
+                
+            genre_3_format = get_refined_3_genres(row)
+            trending_display_list.append({
+                "No": len(trending_display_list) + 1,
+                "Judul Film": row['title'],
+                "Tahun": int(tahun_val),
+                "Genre": genre_3_format,
+                "Rating": round(row['vote_average'], 4)
+            })
+            
+        st.table(pd.DataFrame(trending_display_list).set_index('No'))
     st.markdown("---")
+
 
     # -------------------------------------------------------------------------------------------------------------------------
     # DISPLAY CELL 8 FASE SELEKSI ONBOARDING
