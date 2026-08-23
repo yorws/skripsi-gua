@@ -216,7 +216,8 @@ if df_katalog_global is not None:
     st.header(" Cell 7: Trending Movies Catalog (Konten Terpopuler Global 2024-2026)")
     st.markdown("Daftar film *trending* terkini yang disaring dinamis dari database berdasarkan filter era rilis kontemporer:")
     
-    path_tmdb_raw = r"C:\Users\brows\Downloads\skripsi_rio\Skripsi_Hybrid_Rekomendasi\dataset\TMDb1902–2026\top_rated_movies.csv"
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    path_tmdb_raw = os.path.join(base_dir, 'dataset', 'TMDb1902–2026', 'top_rated_movies.csv')
     df_raw = pd.read_csv(path_tmdb_raw)
     df_filtered_trending = df_raw[df_raw['release_date'].astype(str).str.contains('2024|2025|2026', na=False)].head(20).copy()
     
