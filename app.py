@@ -105,8 +105,9 @@ def get_refined_3_genres(row):
 # =============================================================================================================================
 @st.cache_data
 def load_katalog_data():
-    path_tmdb = r"C:\Users\brows\Downloads\skripsi_rio\Skripsi_Hybrid_Rekomendasi\dataset\TMDb1902–2026\top_rated_movies.csv"
-    path_ml = r"C:\Users\brows\Downloads\skripsi_rio\Skripsi_Hybrid_Rekomendasi\dataset\ml-latest-small\movies.csv"
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    path_tmdb = os.path.join(base_dir, 'dataset', 'TMDb1902–2026', 'top_rated_movies.csv')
+    path_ml = os.path.join(base_dir, 'dataset', 'ml-latest-small', 'movies.csv')
     
     if os.path.exists(path_tmdb) and os.path.exists(path_ml):
         df_new = pd.read_csv(path_tmdb)
