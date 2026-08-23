@@ -248,28 +248,32 @@ if df_katalog_global is not None:
     
     df_onboard_display = st.session_state['katalog_onboarding']
     
-    # Ambil list judul yang dicentang secara langsung saat ini
+    # Baca state checkbox yang sudah tersimpan (agar tidak hilang saat re-render)
     judul_terpilih_detik_ini = []
     
     for idx, row in df_onboard_display.iterrows():
         tahun_str = str(int(row['year_val'])) if pd.notna(row['year_val']) else "-"
         genre_3_onboard = get_refined_3_genres(row)
         label_display = f"🎬 {row['title']} ({tahun_str}) — [ {genre_3_onboard} ]"
+        cb_key = f"cb_onboard_{row['title']}_{idx}"
         
-        if st.checkbox(label_display, key=f"cb_onboard_{row['title']}_{idx}"):
+        checked = st.checkbox(label_display, key=cb_key)
+        if checked:
             judul_terpilih_detik_ini.append(row['title'])
 
     st.markdown(" ")
-    proses_button = st.button("🚀 Hitung Perubahan Vektor & Generate Rekomendasi Global")
+    jumlah_dipilih = len(judul_terpilih_detik_ini)
+    st.caption(f"📋 Film dipilih: **{jumlah_dipilih}/5** (minimal 5 film untuk memproses rekomendasi)")
 
-    if proses_button:
-        # Bebas milih berapapun film, disarankan minimal 5 untuk akurasi optimal.
-        if len(judul_terpilih_detik_ini) >= 1:
-            st.session_state['pilihan_aktif'] = judul_terpilih_detik_ini
-            if len(judul_terpilih_detik_ini) < 5:
-                st.toast("⚠️ [INFO]: Disarankan memilih minimal 5 film agar hasil rekomendasi lebih presisi.", icon="⚠️")
-        else:
-            st.warning("⚠️ [WARNING]: Silakan centang minimal 1 film terlebih dahulu sebelum menekan tombol proses!")
+    # Tombol proses hanya aktif jika sudah pilih minimal 5 film
+    proses_button = st.button(
+        "🚀 Hitung Perubahan Vektor & Generate Rekomendasi Global",
+        disabled=(jumlah_dipilih < 5),
+        help="Centang minimal 5 film terlebih dahulu untuk mengaktifkan tombol ini."
+    )
+
+    if proses_button and jumlah_dipilih >= 5:
+        st.session_state['pilihan_aktif'] = judul_terpilih_detik_ini
 
     # =========================================================================================================================
     # PIPELINE UTAMA: DISAMAKAN 100% DENGAN LOGIKA BACKEND CELL 9
@@ -286,6 +290,12 @@ if df_katalog_global is not None:
                 
         if len(indices_global_valid) == 0:
             indices_global_valid = list(df_katalog_global.head(5).index)
+        
+        # Validasi: pastikan semua index tidak melebihi ukuran cosine_sim matrix
+        max_valid_idx = cosine_sim.shape[0] - 1
+        indices_global_valid = [i for i in indices_global_valid if i <= max_valid_idx]
+        if len(indices_global_valid) == 0:
+            indices_global_valid = [0]
                 
         # 2. Hitung Cosine Score (Pake pengali 4.0 & min_len persis Cell 9 lu)
         user_content_scores = np.max(cosine_sim[indices_global_valid], axis=0)
