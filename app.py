@@ -263,11 +263,13 @@ if df_katalog_global is not None:
     proses_button = st.button("🚀 Hitung Perubahan Vektor & Generate Rekomendasi Global")
 
     if proses_button:
-        # Bebas milih lebih dari 5, yang penting minimal 5.
-        if len(judul_terpilih_detik_ini) >= 5:
+        # Bebas milih berapapun film, disarankan minimal 5 untuk akurasi optimal.
+        if len(judul_terpilih_detik_ini) >= 1:
             st.session_state['pilihan_aktif'] = judul_terpilih_detik_ini
+            if len(judul_terpilih_detik_ini) < 5:
+                st.toast("⚠️ [INFO]: Disarankan memilih minimal 5 film agar hasil rekomendasi lebih presisi.", icon="⚠️")
         else:
-            st.warning(f"⚠️ [WARNING]: Minimal lu harus mencentang **5 film** agar ekstraksi fitur algoritma optimal! Lu baru memilih {len(judul_terpilih_detik_ini)} film.")
+            st.warning("⚠️ [WARNING]: Silakan centang minimal 1 film terlebih dahulu sebelum menekan tombol proses!")
 
     # =========================================================================================================================
     # PIPELINE UTAMA: DISAMAKAN 100% DENGAN LOGIKA BACKEND CELL 9
