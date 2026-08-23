@@ -259,35 +259,38 @@ if df_katalog_global is not None:
     # -------------------------------------------------------------------------------------------------------------------------
     st.header(" Cell 8 Fase Onboarding Preferensi Pengguna")
     st.markdown("Silakan lakukan simulasi seleksi dengan mencentang **minimal 5 film** dari 30 daftar di bawah ini:")
+    st.info("💡 **Petunjuk**: Centang minimal 5 film yang kamu suka, lalu klik tombol **Generate Rekomendasi** di bawah. Checkboxes tidak akan re-load halaman.")
     
     df_onboard_display = st.session_state['katalog_onboarding']
     
-    # Baca state checkbox yang sudah tersimpan (agar tidak hilang saat re-render)
-    judul_terpilih_detik_ini = []
-    
-    for idx, row in df_onboard_display.iterrows():
-        tahun_str = str(int(row['year_val'])) if pd.notna(row['year_val']) else "-"
-        genre_3_onboard = get_refined_3_genres(row)
-        label_display = f"🎬 {row['title']} ({tahun_str}) — [ {genre_3_onboard} ]"
-        cb_key = f"cb_onboard_{row['title']}_{idx}"
+    # Gunakan st.form() agar checkbox tidak trigger re-run setiap klik
+    # User bebas centang semua film dulu, baru submit sekali
+    with st.form("form_onboarding"):
+        judul_terpilih_detik_ini = []
         
-        checked = st.checkbox(label_display, key=cb_key)
-        if checked:
-            judul_terpilih_detik_ini.append(row['title'])
+        for i, (idx, row) in enumerate(df_onboard_display.iterrows()):
+            tahun_str = str(int(row['year_val'])) if pd.notna(row['year_val']) else "-"
+            genre_3_onboard = get_refined_3_genres(row)
+            label_display = f"🎬 {row['title']} ({tahun_str}) — [ {genre_3_onboard} ]"
+            
+            checked = st.checkbox(label_display, key=f"cb_onboard_{i}")
+            if checked:
+                judul_terpilih_detik_ini.append(row['title'])
 
-    st.markdown(" ")
-    jumlah_dipilih = len(judul_terpilih_detik_ini)
-    st.caption(f"📋 Film dipilih: **{jumlah_dipilih}/5** (minimal 5 film untuk memproses rekomendasi)")
+        st.markdown(" ")
+        proses_button = st.form_submit_button(
+            "🚀 Hitung Perubahan Vektor & Generate Rekomendasi Global",
+            help="Centang minimal 5 film terlebih dahulu lalu klik tombol ini."
+        )
 
-    # Tombol proses hanya aktif jika sudah pilih minimal 5 film
-    proses_button = st.button(
-        "🚀 Hitung Perubahan Vektor & Generate Rekomendasi Global",
-        disabled=(jumlah_dipilih < 5),
-        help="Centang minimal 5 film terlebih dahulu untuk mengaktifkan tombol ini."
-    )
+    if proses_button:
+        if len(judul_terpilih_detik_ini) >= 5:
+            st.session_state['pilihan_aktif'] = judul_terpilih_detik_ini
+        else:
+            st.warning(f"⚠️ Pilih minimal **5 film** terlebih dahulu. Saat ini baru memilih {len(judul_terpilih_detik_ini)} film.")
+            if 'pilihan_aktif' in st.session_state:
+                del st.session_state['pilihan_aktif']
 
-    if proses_button and jumlah_dipilih >= 5:
-        st.session_state['pilihan_aktif'] = judul_terpilih_detik_ini
 
     # =========================================================================================================================
     # PIPELINE UTAMA: DISAMAKAN 100% DENGAN LOGIKA BACKEND CELL 9
